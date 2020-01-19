@@ -1,0 +1,4 @@
+<div class="board" (keydown)="boardService.onKeydown($event)">
+  <app-row style="display:flex" *ngFor="let row of boardService.state" [row]="row">
+  </app-row>
+</div>
