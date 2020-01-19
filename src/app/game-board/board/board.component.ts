@@ -1,5 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { BoardService } from '../board.service';
+import { HostListener } from '@angular/core';
+
+export enum KEY_CODE {
+  LEFT_ARROW = 37,
+  UP_ARROW = 38,
+  RIGHT_ARROW = 39,
+  DOWN_ARROW = 40
+}
 
 @Component({
   selector: 'app-board',
@@ -7,6 +15,19 @@ import { BoardService } from '../board.service';
   styleUrls: ['./board.component.sass']
 })
 export class BoardComponent implements OnInit {
+  @HostListener('window:keyup', ['$event'])
+  keyEvent(event: KeyboardEvent) {
+    if (event.keyCode == KEY_CODE.DOWN_ARROW) {
+      this.boardService.downKeyPress();
+    } else if (event.keyCode == KEY_CODE.UP_ARROW) {
+      this.boardService.upKeyPress();
+    } else if (event.keyCode == KEY_CODE.LEFT_ARROW) {
+      this.boardService.leftKeyPress();
+    } else if (event.keyCode == KEY_CODE.RIGHT_ARROW) {
+      this.boardService.rightKeyPress();
+    }
+  }
+
   constructor(private boardService: BoardService) {
     this.boardService.initialiseBoard();
   }

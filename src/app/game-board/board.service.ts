@@ -16,6 +16,9 @@ export class BoardService {
     [[false, true, true], [true, true, false]]
   ];
   state: boolean[][];
+  currentX: number;
+  currentY: number;
+  currentTetrisBlock: boolean[][];
 
   constructor() {}
 
@@ -35,16 +38,75 @@ export class BoardService {
 
   spawnTetrisBlock() {
     let newBlock = this.newTetrisBlock();
-    let initialX = Math.floor((this.boardWidth - newBlock[0].length) / 2);
+    this.currentX = Math.floor((this.boardWidth - newBlock[0].length) / 2);
+    this.currentY = 0;
+    this.currentTetrisBlock = newBlock;
+    this.addTetrisBlock(newBlock);
+  }
 
-    newBlock.forEach((newBlockRow, rowIndex) => {
-      newBlockRow.forEach(
-        (value, colIndex) => (this.state[rowIndex][initialX + colIndex] = value)
+  addTetrisBlock(tetrisBlock: boolean[][]) {
+    tetrisBlock.forEach((blockRow, rowIndex) => {
+      blockRow.forEach(
+        (value, colIndex) =>
+          (this.state[this.currentY + rowIndex][
+            this.currentX + colIndex
+          ] = value)
       );
     });
   }
 
-  onKeydown(event: KeyboardEvent) {
-    console.log('keydown pressed');
+  removeTetrisBlock(tetrisBlock: boolean[][]) {
+    tetrisBlock.forEach((blockRow, rowIndex) => {
+      blockRow.forEach(
+        (value, colIndex) =>
+          (this.state[this.currentY + rowIndex][
+            this.currentX + colIndex
+          ] = false)
+      );
+    });
+  }
+
+  leftKeyPress() {
+    if (!this.leftBoundaryHit()) {
+      this.removeTetrisBlock(this.currentTetrisBlock);
+      this.currentX = this.currentX - 1;
+      this.addTetrisBlock(this.currentTetrisBlock);
+    }
+  }
+
+  rightKeyPress() {
+    if (!this.rightBoundaryHit()) {
+      this.removeTetrisBlock(this.currentTetrisBlock);
+      this.currentX = this.currentX + 1;
+      this.addTetrisBlock(this.currentTetrisBlock);
+    }
+  }
+
+  downKeyPress() {
+    if (!this.bottomBoundaryHit()) {
+      this.removeTetrisBlock(this.currentTetrisBlock);
+      this.currentY = this.currentY + 1;
+      this.addTetrisBlock(this.currentTetrisBlock);
+      console.log(this.currentY, this.boardHeight);
+      if (this.currentY + this.currentTetrisBlock.length === this.boardHeight) {
+        this.spawnTetrisBlock();
+      }
+    }
+  }
+
+  upKeyPress() {}
+
+  leftBoundaryHit() {
+    return this.currentX === 0;
+  }
+
+  rightBoundaryHit() {
+    return (
+      this.currentX + this.currentTetrisBlock[0].length === this.boardWidth
+    );
+  }
+
+  bottomBoundaryHit() {
+    return this.currentY + this.currentTetrisBlock.length === this.boardHeight;
   }
 }
