@@ -29,10 +29,9 @@ export class BoardComponent implements OnInit {
   }
 
   constructor(private boardService: BoardService) {
-    this.boardService.initialiseBoard();
+    this.boardService.newGame();
   }
 
   ngOnInit() {
-    this.boardService.spawnTetrisBlock();
   }
 }

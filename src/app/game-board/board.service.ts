@@ -28,6 +28,16 @@ export class BoardService {
     );
   }
 
+  gameOver() {
+    alert('Game over');
+    this.newGame();
+  }
+
+  newGame() {
+    this.initialiseBoard();
+    this.spawnTetrisBlock();
+  }
+
   getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max));
   }
@@ -39,30 +49,37 @@ export class BoardService {
   spawnTetrisBlock() {
     let newBlock = this.newTetrisBlock();
     this.currentX = Math.floor((this.boardWidth - newBlock[0].length) / 2);
-    this.currentY = 0;
+    this.currentY = -1;
     this.currentTetrisBlock = newBlock;
-    this.addTetrisBlock(newBlock);
+    if (!this.downBlockHit()) {
+      this.currentY = 0;
+      this.addTetrisBlock(newBlock);
+    } else {
+      this.gameOver();
+    }
   }
 
   addTetrisBlock(tetrisBlock: boolean[][]) {
     tetrisBlock.forEach((blockRow, rowIndex) => {
-      blockRow.forEach(
-        (value, colIndex) =>
-          (this.state[this.currentY + rowIndex][
+      blockRow.forEach((value, colIndex) => {
+        if (value) {
+          this.state[this.currentY + rowIndex][
             this.currentX + colIndex
-          ] = value)
-      );
+          ] = value;
+        }
+      });
     });
   }
 
   removeTetrisBlock(tetrisBlock: boolean[][]) {
     tetrisBlock.forEach((blockRow, rowIndex) => {
-      blockRow.forEach(
-        (value, colIndex) =>
-          (this.state[this.currentY + rowIndex][
+      blockRow.forEach((value, colIndex) => {
+        if (value) {
+          this.state[this.currentY + rowIndex][
             this.currentX + colIndex
-          ] = false)
-      );
+          ] = false;
+        }
+      });
     });
   }
 
@@ -83,18 +100,74 @@ export class BoardService {
   }
 
   downKeyPress() {
-    if (!this.bottomBoundaryHit()) {
+    if (this.bottomBoundaryHit()) {
+      this.spawnTetrisBlock();
+    } else if (this.downBlockHit()) {
+      this.spawnTetrisBlock();
+    } else {
       this.removeTetrisBlock(this.currentTetrisBlock);
       this.currentY = this.currentY + 1;
       this.addTetrisBlock(this.currentTetrisBlock);
-      console.log(this.currentY, this.boardHeight);
-      if (this.currentY + this.currentTetrisBlock.length === this.boardHeight) {
-        this.spawnTetrisBlock();
-      }
     }
   }
 
-  upKeyPress() {}
+  downBlockHit() {
+    let blockHeight = this.currentTetrisBlock.length;
+    let hit = false;
+    let lowestBlockRow = this.currentTetrisBlock.slice(-1)[0];
+    let secondLowestBlockRow = this.currentTetrisBlock.slice(-2)[0];
+    let thirdLowestBlockRow = this.currentTetrisBlock.slice(-3)[0];
+
+    // Evaluate lowest row of tetris block
+    lowestBlockRow.forEach((value, colIndex) => {
+      value && this.state[this.currentY + blockHeight][this.currentX + colIndex]
+        ? (hit = true)
+        : null;
+    });
+
+    // Evaluate second-lowest row of tetris block
+    secondLowestBlockRow.forEach((value, colIndex) => {
+      if (value && !lowestBlockRow[colIndex]) {
+        // If there is a gap below the current block in the second lowest row
+        if (this.currentY + blockHeight - 1 > -1) {
+          value &&
+          this.state[this.currentY + blockHeight - 1][this.currentX + colIndex]
+            ? (hit = true)
+            : null;
+        }
+      }
+    });
+
+    // Evaluate second-lowest row of tetris block
+    thirdLowestBlockRow.forEach((value, colIndex) => {
+      if (value && !secondLowestBlockRow[colIndex]) {
+        // If there is a gap below the current block in the second lowest row
+        if (this.currentY + blockHeight - 2 > -1) {
+          value &&
+          this.state[this.currentY + blockHeight - 2][this.currentX + colIndex]
+            ? (hit = true)
+            : null;
+        }
+      }
+    });
+
+    return hit;
+  }
+
+  upKeyPress() {
+    this.removeTetrisBlock(this.currentTetrisBlock);
+    this.currentTetrisBlock = this.flipTetrisBlock(this.currentTetrisBlock);
+    this.addTetrisBlock(this.currentTetrisBlock);
+  }
+
+  flipTetrisBlock(tetrisBlock: boolean[][]) {
+    console.log(
+      tetrisBlock[0].map((col, i) => tetrisBlock.map(row => row[i]).reverse())
+    );
+    return tetrisBlock[0].map((col, i) =>
+      tetrisBlock.map(row => row[i]).reverse()
+    );
+  }
 
   leftBoundaryHit() {
     return this.currentX === 0;
