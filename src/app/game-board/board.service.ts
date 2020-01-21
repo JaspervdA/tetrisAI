@@ -84,7 +84,11 @@ export class BoardService {
   }
 
   leftKeyPress() {
-    if (!this.leftBoundaryHit()) {
+    if (this.leftBoundaryHit()) {
+      console.log('left boundary hit');
+    } else if (this.leftBlockHit()) {
+      console.log('left block hit');
+    } else {
       this.removeTetrisBlock(this.currentTetrisBlock);
       this.currentX = this.currentX - 1;
       this.addTetrisBlock(this.currentTetrisBlock);
@@ -92,7 +96,11 @@ export class BoardService {
   }
 
   rightKeyPress() {
-    if (!this.rightBoundaryHit()) {
+    if (this.rightBoundaryHit()) {
+      console.log('right boundary hit');
+    } else if (this.rightBlockHit()) {
+      console.log('right block hit');
+    } else {
       this.removeTetrisBlock(this.currentTetrisBlock);
       this.currentX = this.currentX + 1;
       this.addTetrisBlock(this.currentTetrisBlock);
@@ -109,6 +117,35 @@ export class BoardService {
       this.currentY = this.currentY + 1;
       this.addTetrisBlock(this.currentTetrisBlock);
     }
+  }
+
+  upKeyPress() {
+    this.removeTetrisBlock(this.currentTetrisBlock);
+    this.currentTetrisBlock = this.flipTetrisBlock(this.currentTetrisBlock);
+    this.addTetrisBlock(this.currentTetrisBlock);
+  }
+
+  flipTetrisBlock(tetrisBlock: boolean[][]) {
+    console.log(
+      tetrisBlock[0].map((col, i) => tetrisBlock.map(row => row[i]).reverse())
+    );
+    return tetrisBlock[0].map((col, i) =>
+      tetrisBlock.map(row => row[i]).reverse()
+    );
+  }
+
+  leftBoundaryHit() {
+    return this.currentX < 1;
+  }
+
+  rightBoundaryHit() {
+    return (
+      this.currentX + this.currentTetrisBlock[0].length > this.boardWidth - 1
+    );
+  }
+
+  bottomBoundaryHit() {
+    return this.currentY + this.currentTetrisBlock.length === this.boardHeight;
   }
 
   downBlockHit() {
@@ -154,32 +191,41 @@ export class BoardService {
     return hit;
   }
 
-  upKeyPress() {
-    this.removeTetrisBlock(this.currentTetrisBlock);
-    this.currentTetrisBlock = this.flipTetrisBlock(this.currentTetrisBlock);
-    this.addTetrisBlock(this.currentTetrisBlock);
+  leftBlockHit() {
+    // Find the index of the most left blocks in the tetris block
+    let mostLeftColumns = new Array();
+    this.currentTetrisBlock.forEach(blockRow => {
+      mostLeftColumns.push(blockRow.findIndex(value => value === true));
+    });
+    console.log(mostLeftColumns);
+
+    // Check whether any of the most left blocks hits an existing block
+    let hit = false;
+    mostLeftColumns.forEach((colIndex, rowIndex) => {
+      if (this.state[this.currentY + rowIndex][this.currentX + colIndex - 1]) {
+        hit = true;
+      }
+    });
+    return hit;
   }
 
-  flipTetrisBlock(tetrisBlock: boolean[][]) {
-    console.log(
-      tetrisBlock[0].map((col, i) => tetrisBlock.map(row => row[i]).reverse())
-    );
-    return tetrisBlock[0].map((col, i) =>
-      tetrisBlock.map(row => row[i]).reverse()
-    );
-  }
-
-  leftBoundaryHit() {
-    return this.currentX === 0;
-  }
-
-  rightBoundaryHit() {
-    return (
-      this.currentX + this.currentTetrisBlock[0].length === this.boardWidth
-    );
-  }
-
-  bottomBoundaryHit() {
-    return this.currentY + this.currentTetrisBlock.length === this.boardHeight;
+  rightBlockHit() {
+    // // Find the index of the most left blocks in the tetris block
+    // let mostRightColumns = new Array();
+    // this.currentTetrisBlock.forEach(blockRow => {
+    //   mostRightColumns.push(
+    //     blockRow.length - blockRow.reverse().findIndex(value => value === true)
+    //   );
+    // });
+    // console.log(mostRightColumns);
+    //
+    // // Check whether any of the most left blocks hits an existing block
+    // let hit = false;
+    // mostRightColumns.forEach((colIndex, rowIndex) => {
+    //   if (this.state[this.currentY + rowIndex][this.currentX + colIndex - 1]) {
+    //     hit = true;
+    //   }
+    // });
+    return false;
   }
 }
