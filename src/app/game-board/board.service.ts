@@ -106,12 +106,11 @@ export class BoardService {
       this.addTetrisBlock(this.currentTetrisBlock);
     }
   }
-
   downKeyPress() {
     if (this.bottomBoundaryHit()) {
-      this.spawnTetrisBlock();
+      this.newTurn();
     } else if (this.downBlockHit()) {
-      this.spawnTetrisBlock();
+      this.newTurn();
     } else {
       this.removeTetrisBlock(this.currentTetrisBlock);
       this.currentY = this.currentY + 1;
@@ -125,10 +124,12 @@ export class BoardService {
     this.addTetrisBlock(this.currentTetrisBlock);
   }
 
+  newTurn() {
+    this.clearFullRows();
+    this.spawnTetrisBlock();
+  }
+
   flipTetrisBlock(tetrisBlock: boolean[][]) {
-    console.log(
-      tetrisBlock[0].map((col, i) => tetrisBlock.map(row => row[i]).reverse())
-    );
     return tetrisBlock[0].map((col, i) =>
       tetrisBlock.map(row => row[i]).reverse()
     );
@@ -149,45 +150,23 @@ export class BoardService {
   }
 
   downBlockHit() {
-    let blockHeight = this.currentTetrisBlock.length;
+    // Find the index of the lowest blocks in the tetris block
+    let lowestRows = new Array();
+    this.currentTetrisBlock.forEach((blockRow, rowIndex) => {
+      blockRow.forEach((value, colIndex) => {
+        if (value) {
+          lowestRows[colIndex] = rowIndex;
+        }
+      });
+    });
+
+    // Check whether any of the lowest blocks hit an existing block
     let hit = false;
-    let lowestBlockRow = this.currentTetrisBlock.slice(-1)[0];
-    let secondLowestBlockRow = this.currentTetrisBlock.slice(-2)[0];
-    let thirdLowestBlockRow = this.currentTetrisBlock.slice(-3)[0];
-
-    // Evaluate lowest row of tetris block
-    lowestBlockRow.forEach((value, colIndex) => {
-      value && this.state[this.currentY + blockHeight][this.currentX + colIndex]
-        ? (hit = true)
-        : null;
-    });
-
-    // Evaluate second-lowest row of tetris block
-    secondLowestBlockRow.forEach((value, colIndex) => {
-      if (value && !lowestBlockRow[colIndex]) {
-        // If there is a gap below the current block in the second lowest row
-        if (this.currentY + blockHeight - 1 > -1) {
-          value &&
-          this.state[this.currentY + blockHeight - 1][this.currentX + colIndex]
-            ? (hit = true)
-            : null;
-        }
+    lowestRows.forEach((rowIndex, colIndex) => {
+      if (this.state[this.currentY + rowIndex + 1][this.currentX + colIndex]) {
+        hit = true;
       }
     });
-
-    // Evaluate second-lowest row of tetris block
-    thirdLowestBlockRow.forEach((value, colIndex) => {
-      if (value && !secondLowestBlockRow[colIndex]) {
-        // If there is a gap below the current block in the second lowest row
-        if (this.currentY + blockHeight - 2 > -1) {
-          value &&
-          this.state[this.currentY + blockHeight - 2][this.currentX + colIndex]
-            ? (hit = true)
-            : null;
-        }
-      }
-    });
-
     return hit;
   }
 
@@ -197,9 +176,8 @@ export class BoardService {
     this.currentTetrisBlock.forEach(blockRow => {
       mostLeftColumns.push(blockRow.findIndex(value => value === true));
     });
-    console.log(mostLeftColumns);
 
-    // Check whether any of the most left blocks hits an existing block
+    // Check whether any of the most left blocks hit an existing block
     let hit = false;
     mostLeftColumns.forEach((colIndex, rowIndex) => {
       if (this.state[this.currentY + rowIndex][this.currentX + colIndex - 1]) {
@@ -210,22 +188,38 @@ export class BoardService {
   }
 
   rightBlockHit() {
-    // // Find the index of the most left blocks in the tetris block
-    // let mostRightColumns = new Array();
-    // this.currentTetrisBlock.forEach(blockRow => {
-    //   mostRightColumns.push(
-    //     blockRow.length - blockRow.reverse().findIndex(value => value === true)
-    //   );
-    // });
-    // console.log(mostRightColumns);
-    //
-    // // Check whether any of the most left blocks hits an existing block
-    // let hit = false;
-    // mostRightColumns.forEach((colIndex, rowIndex) => {
-    //   if (this.state[this.currentY + rowIndex][this.currentX + colIndex - 1]) {
-    //     hit = true;
-    //   }
-    // });
-    return false;
+    // Find the index of the most right blocks in the tetris block
+    let mostRightColumns = new Array();
+    this.currentTetrisBlock.forEach(blockRow => {
+      let reversedRow = [...blockRow].reverse();
+      mostRightColumns.push(
+        blockRow.length - 1 - reversedRow.findIndex(value => value === true)
+      );
+    });
+
+    // Check whether any of the most right blocks hit an existing block
+    let hit = false;
+    mostRightColumns.forEach((colIndex, rowIndex) => {
+      if (this.state[this.currentY + rowIndex][this.currentX + colIndex + 1]) {
+        hit = true;
+      }
+    });
+    return hit;
+  }
+
+  clearFullRows() {
+    let fullRows = [];
+    this.state.forEach((row, rowIndex) => {
+      if (row.every(value => value === true)) {
+        fullRows.push(rowIndex);
+      }
+    });
+    fullRows.forEach(rowIndex => this.removeFullRow(rowIndex));
+  }
+
+  removeFullRow(rowIndex: number) {
+    this.state.splice(rowIndex, 1);
+    let newRow = new Array(this.boardWidth).fill(false);
+    this.state.splice(1, 0, newRow);
   }
 }
