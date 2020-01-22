@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Subscription, interval } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -19,6 +20,8 @@ export class BoardService {
   currentX: number;
   currentY: number;
   currentTetrisBlock: boolean[][];
+  timerSubscribtion: Subscription;
+  speed: number = 10;
 
   constructor() {}
 
@@ -29,6 +32,7 @@ export class BoardService {
   }
 
   gameOver() {
+    this.timerSubscribtion.unsubscribe();
     alert('Game over');
     this.newGame();
   }
@@ -36,6 +40,9 @@ export class BoardService {
   newGame() {
     this.initialiseBoard();
     this.spawnTetrisBlock();
+    this.timerSubscribtion = interval(1000 / this.speed).subscribe(
+      (val: number) => this.downKeyPress()
+    );
   }
 
   getRandomInt(max) {
@@ -208,13 +215,11 @@ export class BoardService {
   }
 
   clearFullRows() {
-    let fullRows = [];
     this.state.forEach((row, rowIndex) => {
       if (row.every(value => value === true)) {
-        fullRows.push(rowIndex);
+        this.removeFullRow(rowIndex);
       }
     });
-    fullRows.forEach(rowIndex => this.removeFullRow(rowIndex));
   }
 
   removeFullRow(rowIndex: number) {
