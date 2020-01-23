@@ -21,7 +21,7 @@ export class BoardService {
   currentY: number;
   currentTetrisBlock: boolean[][];
   timerSubscribtion: Subscription;
-  speed: number = 10;
+  speed: number = 5;
 
   constructor() {}
 
@@ -60,31 +60,27 @@ export class BoardService {
     this.currentTetrisBlock = newBlock;
     if (!this.downBlockHit()) {
       this.currentY = 0;
-      this.addTetrisBlock(newBlock);
+      this.addTetrisBlock(newBlock, this.state);
     } else {
       this.gameOver();
     }
   }
 
-  addTetrisBlock(tetrisBlock: boolean[][]) {
+  addTetrisBlock(tetrisBlock: boolean[][], state: boolean[][]) {
     tetrisBlock.forEach((blockRow, rowIndex) => {
       blockRow.forEach((value, colIndex) => {
         if (value) {
-          this.state[this.currentY + rowIndex][
-            this.currentX + colIndex
-          ] = value;
+          state[this.currentY + rowIndex][this.currentX + colIndex] = value;
         }
       });
     });
   }
 
-  removeTetrisBlock(tetrisBlock: boolean[][]) {
+  removeTetrisBlock(tetrisBlock: boolean[][], state: boolean[][]) {
     tetrisBlock.forEach((blockRow, rowIndex) => {
       blockRow.forEach((value, colIndex) => {
         if (value) {
-          this.state[this.currentY + rowIndex][
-            this.currentX + colIndex
-          ] = false;
+          state[this.currentY + rowIndex][this.currentX + colIndex] = false;
         }
       });
     });
@@ -96,39 +92,46 @@ export class BoardService {
     } else if (this.leftBlockHit()) {
       console.log('left block hit');
     } else {
-      this.removeTetrisBlock(this.currentTetrisBlock);
+      this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX - 1;
-      this.addTetrisBlock(this.currentTetrisBlock);
+      this.addTetrisBlock(this.currentTetrisBlock, this.state);
     }
   }
 
   rightKeyPress() {
-    if (this.rightBoundaryHit()) {
+    if (this.rightBoundaryHit(this.currentX, this.currentTetrisBlock)) {
       console.log('right boundary hit');
-    } else if (this.rightBlockHit()) {
+    } else if (
+      this.rightBlockHit(this.currentTetrisBlock, this.state, this.currentX)
+    ) {
       console.log('right block hit');
     } else {
-      this.removeTetrisBlock(this.currentTetrisBlock);
+      this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX + 1;
-      this.addTetrisBlock(this.currentTetrisBlock);
+      this.addTetrisBlock(this.currentTetrisBlock, this.state);
     }
   }
+
   downKeyPress() {
     if (this.bottomBoundaryHit()) {
       this.newTurn();
     } else if (this.downBlockHit()) {
       this.newTurn();
     } else {
-      this.removeTetrisBlock(this.currentTetrisBlock);
+      this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentY = this.currentY + 1;
-      this.addTetrisBlock(this.currentTetrisBlock);
+      this.addTetrisBlock(this.currentTetrisBlock, this.state);
     }
   }
 
   upKeyPress() {
-    this.removeTetrisBlock(this.currentTetrisBlock);
-    this.currentTetrisBlock = this.flipTetrisBlock(this.currentTetrisBlock);
-    this.addTetrisBlock(this.currentTetrisBlock);
+    if (this.legalFlip()) {
+      this.removeTetrisBlock(this.currentTetrisBlock, this.state);
+      this.currentTetrisBlock = this.flipTetrisBlock(this.currentTetrisBlock);
+      this.addTetrisBlock(this.currentTetrisBlock, this.state);
+    } else {
+      console.log('illegalFlip');
+    }
   }
 
   newTurn() {
@@ -142,14 +145,46 @@ export class BoardService {
     );
   }
 
+  legalFlip() {
+    let virtualState = JSON.parse(JSON.stringify([...this.state]));
+    let virtualBlock = JSON.parse(JSON.stringify(this.currentTetrisBlock));
+    this.removeTetrisBlock(virtualBlock, virtualState);
+    virtualBlock = this.flipTetrisBlock(virtualBlock);
+    let rightBlockHit = this.rightBlockHit(
+      virtualBlock,
+      virtualState,
+      this.currentX - 1
+    );
+
+    let stateHit = this.oldStateHit(virtualBlock, virtualState);
+    let rightBoundaryHit = this.rightBoundaryHit(
+      this.currentX - 1,
+      virtualBlock
+    );
+    return !rightBoundaryHit && !rightBlockHit && !stateHit;
+  }
+
+  oldStateHit(virtualBlock: boolean[][], virtualState: boolean[][]) {
+    let hit = false;
+    virtualBlock.forEach((row, rowIndex) =>
+      row.forEach((value, colIndex) => {
+        if (
+          value &&
+          virtualState[this.currentY + rowIndex][this.currentX + colIndex]
+        ) {
+          hit = true;
+        }
+      })
+    );
+    return hit;
+  }
+
   leftBoundaryHit() {
     return this.currentX < 1;
   }
 
-  rightBoundaryHit() {
-    return (
-      this.currentX + this.currentTetrisBlock[0].length > this.boardWidth - 1
-    );
+  rightBoundaryHit(xPosition: number, tetrisBlock: boolean[][]) {
+    return xPosition + tetrisBlock[0].length > this.boardWidth - 1;
   }
 
   bottomBoundaryHit() {
@@ -194,10 +229,14 @@ export class BoardService {
     return hit;
   }
 
-  rightBlockHit() {
+  rightBlockHit(
+    tetrisBlock: boolean[][],
+    state: boolean[][],
+    currentX: number
+  ) {
     // Find the index of the most right blocks in the tetris block
     let mostRightColumns = new Array();
-    this.currentTetrisBlock.forEach(blockRow => {
+    tetrisBlock.forEach(blockRow => {
       let reversedRow = [...blockRow].reverse();
       mostRightColumns.push(
         blockRow.length - 1 - reversedRow.findIndex(value => value === true)
@@ -207,7 +246,7 @@ export class BoardService {
     // Check whether any of the most right blocks hit an existing block
     let hit = false;
     mostRightColumns.forEach((colIndex, rowIndex) => {
-      if (this.state[this.currentY + rowIndex][this.currentX + colIndex + 1]) {
+      if (state[this.currentY + rowIndex][currentX + colIndex + 1]) {
         hit = true;
       }
     });
