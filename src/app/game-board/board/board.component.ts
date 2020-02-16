@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { BoardService } from '../board.service';
+import { AiService } from '../../ai/ai.service';
 import { HostListener } from '@angular/core';
 
 export enum KEY_CODE {
@@ -28,10 +29,14 @@ export class BoardComponent implements OnInit {
     }
   }
 
-  constructor(private boardService: BoardService) {
-    this.boardService.newGame();
-  }
+  constructor(
+    private boardService: BoardService,
+    private aiService: AiService
+  ) {}
 
   ngOnInit() {
+    this.aiService.createModel();
+    this.aiService.trainModel();
+    // this.aiService.visualiseModel();
   }
 }

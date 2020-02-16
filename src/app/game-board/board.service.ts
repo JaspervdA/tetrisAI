@@ -5,23 +5,28 @@ import { Subscription, interval } from 'rxjs';
   providedIn: 'root'
 })
 export class BoardService {
-  boardWidth: number = 10;
-  boardHeight: number = 20;
-  tetrisBlocks: boolean[][][] = [
-    [[true, true, true, true]],
-    [[true, true], [true, true]],
-    [[true, false, false], [true, true, true]],
-    [[false, true, false], [true, true, true]],
-    [[false, false, true], [true, true, true]],
-    [[true, true, false], [false, true, true]],
-    [[false, true, true], [true, true, false]]
-  ];
+  // boardWidth: number = 10;
+  // boardHeight: number = 20;
+  boardWidth: number = 3;
+  boardHeight: number = 5;
+  tetrisBlocks: boolean[][][] = [[[true]]];
+  // tetrisBlocks: boolean[][][] = [
+  //   [[true, true, true, true]],
+  //   [[true, true], [true, true]],
+  //   [[true, false, false], [true, true, true]],
+  //   [[false, true, false], [true, true, true]],
+  //   [[false, false, true], [true, true, true]],
+  //   [[true, true, false], [false, true, true]],
+  //   [[false, true, true], [true, true, false]]
+  // ];
   state: boolean[][];
   currentX: number;
   currentY: number;
   currentTetrisBlock: boolean[][];
   timerSubscribtion: Subscription;
   speed: number = 5;
+  score: number = 0;
+  highscore: number = 0;
 
   constructor() {}
 
@@ -32,9 +37,10 @@ export class BoardService {
   }
 
   gameOver() {
+    this.highscore = Math.max(this.score, this.highscore);
+    this.score = 0;
     this.timerSubscribtion.unsubscribe();
     alert('Game over');
-    this.newGame();
   }
 
   newGame() {
@@ -88,9 +94,9 @@ export class BoardService {
 
   leftKeyPress() {
     if (this.leftBoundaryHit()) {
-      console.log('left boundary hit');
+      return;
     } else if (this.leftBlockHit()) {
-      console.log('left block hit');
+      return;
     } else {
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX - 1;
@@ -100,11 +106,11 @@ export class BoardService {
 
   rightKeyPress() {
     if (this.rightBoundaryHit(this.currentX, this.currentTetrisBlock)) {
-      console.log('right boundary hit');
+      return;
     } else if (
       this.rightBlockHit(this.currentTetrisBlock, this.state, this.currentX)
     ) {
-      console.log('right block hit');
+      return;
     } else {
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX + 1;
@@ -130,7 +136,7 @@ export class BoardService {
       this.currentTetrisBlock = this.flipTetrisBlock(this.currentTetrisBlock);
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
     } else {
-      console.log('illegalFlip');
+      return;
     }
   }
 
@@ -262,8 +268,9 @@ export class BoardService {
   }
 
   removeFullRow(rowIndex: number) {
+    this.score += 1;
     this.state.splice(rowIndex, 1);
     let newRow = new Array(this.boardWidth).fill(false);
-    this.state.splice(1, 0, newRow);
+    this.state.splice(0, 0, newRow);
   }
 }

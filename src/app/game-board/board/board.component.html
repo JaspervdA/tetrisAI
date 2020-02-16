@@ -2,3 +2,8 @@
   <app-row style="display:flex" *ngFor="let row of boardService.state" [row]="row">
   </app-row>
 </div>
+<div>
+  <button (click)="boardService.newGame()">New Game</button>
+  <p>{{'Score: '+this.boardService.score}}</p>
+  <p>{{'Highscore: '+this.boardService.highscore}}</p>
+</div>
