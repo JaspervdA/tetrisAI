@@ -24,9 +24,11 @@ export class BoardService {
   currentY: number;
   currentTetrisBlock: boolean[][];
   timerSubscribtion: Subscription;
-  speed: number = 5;
+  speed: number = 0;
   score: number = 0;
   highscore: number = 0;
+  aiReward: number;
+  gameIsOver: boolean;
 
   constructor() {}
 
@@ -37,18 +39,22 @@ export class BoardService {
   }
 
   gameOver() {
+    this.aiReward = -10;
+    this.gameIsOver = true;
     this.highscore = Math.max(this.score, this.highscore);
     this.score = 0;
-    this.timerSubscribtion.unsubscribe();
-    alert('Game over');
+    // this.timerSubscribtion.unsubscribe();
   }
 
   newGame() {
+    this.gameIsOver = false;
     this.initialiseBoard();
     this.spawnTetrisBlock();
-    this.timerSubscribtion = interval(1000 / this.speed).subscribe(
-      (val: number) => this.downKeyPress()
-    );
+    if (this.speed > 0) {
+      this.timerSubscribtion = interval(1000 / this.speed).subscribe(
+        (val: number) => this.downKeyPress()
+      );
+    }
   }
 
   getRandomInt(max) {
@@ -94,10 +100,13 @@ export class BoardService {
 
   leftKeyPress() {
     if (this.leftBoundaryHit()) {
+      this.aiReward -= 0.5;
       return;
     } else if (this.leftBlockHit()) {
+      this.aiReward -= 0.5;
       return;
     } else {
+      this.aiReward -= 0.1;
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX - 1;
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
@@ -106,12 +115,15 @@ export class BoardService {
 
   rightKeyPress() {
     if (this.rightBoundaryHit(this.currentX, this.currentTetrisBlock)) {
+      this.aiReward -= -0.5;
       return;
     } else if (
       this.rightBlockHit(this.currentTetrisBlock, this.state, this.currentX)
     ) {
+      this.aiReward -= 0.5;
       return;
     } else {
+      this.aiReward -= 0.1;
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX + 1;
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
@@ -120,6 +132,7 @@ export class BoardService {
 
   downKeyPress() {
     if (this.bottomBoundaryHit()) {
+      this.aiReward +=0.2
       this.newTurn();
     } else if (this.downBlockHit()) {
       this.newTurn();
@@ -268,6 +281,7 @@ export class BoardService {
   }
 
   removeFullRow(rowIndex: number) {
+    this.aiReward += 2;
     this.score += 1;
     this.state.splice(rowIndex, 1);
     let newRow = new Array(this.boardWidth).fill(false);

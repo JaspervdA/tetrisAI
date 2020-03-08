@@ -2,8 +2,12 @@
   <app-row style="display:flex" *ngFor="let row of boardService.state" [row]="row">
   </app-row>
 </div>
+<h2 *ngIf="aiService.training">{{'Training games ' + aiService.trainingGamesPlayed + '/' + aiService.trainingGames}}</h2>
+<h2 *ngIf="boardService.gameIsOver">Game Over!</h2>
 <div>
-  <button (click)="boardService.newGame()">New Game</button>
+  <button (click)="newGameClick()">New Game</button>
+  <button (click)="trainAiClick()">Train AI Model</button>
+  <button (click)="playTrainedAiClick()">Play with Trained AI Model</button>
   <p>{{'Score: '+this.boardService.score}}</p>
   <p>{{'Highscore: '+this.boardService.highscore}}</p>
 </div>

@@ -34,9 +34,21 @@ export class BoardComponent implements OnInit {
     private aiService: AiService
   ) {}
 
-  ngOnInit() {
+  ngOnInit() {}
+
+  newGameClick() {
+    this.boardService.gameIsOver = false;
+    this.boardService.newGame();
+  }
+
+  trainAiClick() {
+    this.aiService.training = true;
     this.aiService.createModel();
     this.aiService.trainModel();
     // this.aiService.visualiseModel();
+  }
+  playTrainedAiClick() {
+    this.aiService.training = false;
+    this.aiService.playTrainedModel();
   }
 }
