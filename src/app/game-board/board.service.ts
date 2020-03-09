@@ -47,6 +47,7 @@ export class BoardService {
   }
 
   newGame() {
+    this.score = 0;
     this.gameIsOver = false;
     this.initialiseBoard();
     this.spawnTetrisBlock();
@@ -100,13 +101,13 @@ export class BoardService {
 
   leftKeyPress() {
     if (this.leftBoundaryHit()) {
-      this.aiReward -= 0.5;
+      this.aiReward += -0.5;
       return;
     } else if (this.leftBlockHit()) {
-      this.aiReward -= 0.5;
+      this.aiReward += -0.5;
       return;
     } else {
-      this.aiReward -= 0.1;
+      this.aiReward += -0.1;
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX - 1;
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
@@ -115,15 +116,15 @@ export class BoardService {
 
   rightKeyPress() {
     if (this.rightBoundaryHit(this.currentX, this.currentTetrisBlock)) {
-      this.aiReward -= -0.5;
+      this.aiReward += -0.5;
       return;
     } else if (
       this.rightBlockHit(this.currentTetrisBlock, this.state, this.currentX)
     ) {
-      this.aiReward -= 0.5;
+      this.aiReward += -0.5;
       return;
     } else {
-      this.aiReward -= 0.1;
+      this.aiReward += -0.1;
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX + 1;
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
@@ -132,7 +133,7 @@ export class BoardService {
 
   downKeyPress() {
     if (this.bottomBoundaryHit()) {
-      this.aiReward +=0.2
+      this.aiReward += 0.2;
       this.newTurn();
     } else if (this.downBlockHit()) {
       this.newTurn();

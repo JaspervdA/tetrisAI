@@ -43,8 +43,8 @@ export class BoardComponent implements OnInit {
 
   trainAiClick() {
     this.aiService.training = true;
-    this.aiService.createModel();
-    this.aiService.trainModel();
+    this.aiService.createTrainingModels();
+    this.aiService.trainGenerations();
     // this.aiService.visualiseModel();
   }
   playTrainedAiClick() {

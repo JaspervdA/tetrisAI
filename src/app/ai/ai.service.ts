@@ -4,67 +4,104 @@ import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 import { Subscription, interval } from 'rxjs';
 
+interface ModelScore {
+  model: any;
+  score: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AiService {
-  model: any;
+  population: ModelScore[];
   training: boolean = false;
   actions: string[] = ['LEFT', 'RIGHT', 'DOWN'];
   neurons: number = 6;
-  trainingGamesPlayed: number = 0;
-  trainingGames: number = 100;
+  populationMember: number = 0;
   timerSubscribtion: Subscription;
+  populationSize: number = 10;
+  generation: number = 0;
+  trainingGenerations: number = 5;
 
   constructor(private boardService: BoardService) {}
 
   createModel() {
     // Define a model for linear regression.
-    this.model = tf.sequential();
+    let model = tf.sequential();
     // Add a single hidden layer
-    this.model.add(
+    model.add(
       tf.layers.dense({
-        inputShape: [this.boardService.boardWidth + 2],
-        units: this.neurons
+        inputShape: [this.boardService.boardWidth + 1],
+        units: this.neurons,
+        activation: 'sigmoid'
+        // kernelInitializer: 'leCunNormal',
+        // useBias: true,
+        // biasInitializer: 'randomNormal'
       })
     );
 
     // Add an output layer with a size equal to the number of actions it should predict
-    this.model.add(tf.layers.dense({ units: this.actions.length }));
-    this.model.compile({ loss: 'meanSquaredError', optimizer: 'sgd' });
+    model.add(tf.layers.dense({ units: this.actions.length }));
+    model.compile({ loss: 'meanSquaredError', optimizer: 'sgd' });
+    return model;
   }
 
-  visualiseModel() {
-    tfvis.show.modelSummary({ name: 'Model Summary' }, this.model);
+  createTrainingModels() {
+    let i;
+    this.population = [];
+    for (i = 0; i < this.populationSize; i++) {
+      this.population.push({ model: this.createModel(), score: 0 });
+    }
   }
 
-  async trainModel() {
-    this.trainingGamesPlayed = 0;
+  visualiseModel(model) {
+    tfvis.show.modelSummary({ name: 'Model Summary' }, model);
+  }
+
+  async trainGenerations() {
     for (
-      this.trainingGamesPlayed;
-      this.trainingGamesPlayed < this.trainingGames;
-      this.trainingGamesPlayed++
+      this.generation = 0;
+      this.generation < this.trainingGenerations;
+      this.generation++
+    ) {
+      await this.trainModels();
+      this.evolvePopulation();
+    }
+  }
+
+  async trainModels() {
+    for (
+      this.populationMember = 0;
+      this.populationMember < this.populationSize;
+      this.populationMember++
     ) {
       this.boardService.newGame();
-      while (!this.boardService.gameIsOver) {
-        const inputTensor = this.getInputTensor();
-        const outputTensor = this.getOutputTensor(inputTensor);
 
-        await this.model.fit(inputTensor, outputTensor);
+      while (!this.boardService.gameIsOver && this.boardService.score < 100) {
+        this.population[this.populationMember].score = this.boardService.score;
+        const inputTensor = this.getInputTensor();
+        const outputTensor = this.getOutputTensor(
+          inputTensor,
+          this.population[this.populationMember].model
+        );
+        await this.population[this.populationMember].model.fit(
+          inputTensor,
+          outputTensor
+        );
       }
+      console.log(this.population);
     }
   }
 
   playTrainedModel() {
-    if (this.model) {
+    if (this.population) {
       this.boardService.newGame();
-      this.timerSubscribtion = interval(50).subscribe((val: number) => {
+      this.timerSubscribtion = interval(1000).subscribe((val: number) => {
         if (this.boardService.gameIsOver) {
           this.timerSubscribtion.unsubscribe();
         } else {
           const inputTensor = this.getInputTensor();
-          inputTensor.print();
-          this.chooseAction(inputTensor);
+          this.chooseAction(inputTensor, this.population[0].model);
         }
       });
     } else {
@@ -72,16 +109,15 @@ export class AiService {
     }
   }
 
-  chooseAction(inputTensor) {
+  chooseAction(inputTensor, model) {
     let actionIndex = -1;
     //choose action from model
-    const outputs = this.model.predict(inputTensor).arraySync()[0];
-    console.log(outputs);
+    const outputs = model.predict(inputTensor).arraySync()[0];
 
     if (this.training) {
-      //choose randomly 50/50 of the time
-      let randomActionFraction = this.trainingGamesPlayed / this.trainingGames;
-      if (Math.random() > randomActionFraction * 2) {
+      //choose randomly for a fractino of the time
+      let randomActionFraction = this.generation / this.trainingGenerations;
+      if (Math.random() > randomActionFraction) {
         // Select random action
         actionIndex = Math.floor(Math.random() * 3 + 0);
         this.performAction(actionIndex);
@@ -105,16 +141,13 @@ export class AiService {
     return tf.tensor2d(inputs, [1, inputs.length]);
   }
 
-  getOutputTensor(inputTensor) {
+  getOutputTensor(inputTensor, model) {
     this.boardService.aiReward = 0;
-    const actionIndex = this.chooseAction(inputTensor);
+    const actionIndex = this.chooseAction(inputTensor, model);
     const reward = this.boardService.aiReward;
-    console.log(reward);
-    const predictedOutput = this.model.predict(inputTensor).arraySync()[0];
-    console.log(`Model is training, predicted output: ${predictedOutput}`);
+    const predictedOutput = model.predict(inputTensor).arraySync()[0];
     let correctedOutput = predictedOutput;
     correctedOutput[actionIndex] = correctedOutput[actionIndex] + reward;
-
     return tf.tensor2d(correctedOutput, [1, correctedOutput.length]);
   }
 
@@ -138,9 +171,11 @@ export class AiService {
         }
       });
     });
+    columnHeights = columnHeights.map(
+      colHeight => colHeight - this.boardService.currentY
+    );
     let x = this.boardService.currentX;
-    let y = this.boardService.currentY;
-    return [...columnHeights, x, y];
+    return [...columnHeights, x];
   }
 
   performAction(index: number) {
@@ -151,8 +186,59 @@ export class AiService {
     } else if (index === 2) {
       this.boardService.downKeyPress();
     } else {
-      console.log('Illegal action chosen');
+      return;
     }
+  }
+
+  evolvePopulation() {
+    const winners = this.getWinners();
+    console.log(winners);
+    const crossover1 = this.crossOver(winners[0], winners[1]);
+    const crossover2 = this.crossOver(winners[0], winners[2]);
+    const crossover3 = this.crossOver(winners[0], winners[3]);
+    const crossover4 = this.crossOver(winners[1], winners[2]);
+    const crossover5 = this.crossOver(winners[1], winners[3]);
+    const crossover6 = this.crossOver(winners[2], winners[3]);
+
+    this.population = [...winners, ...winners, winners[0], winners[1]];
+  }
+
+  crossOver(a, b) {
+    const biasA = a.model.layers[0].bias.read();
+    const biasB = b.model.layers[0].bias.read();
+
+    return {
+      model: this.setBias(a.model, this.exchangeBias(biasA, biasB)),
+      score: 0
+    };
+  }
+
+  exchangeBias(tensorA, tensorB) {
+    const size = Math.ceil(tensorA.size / 2);
+    return tf.tidy(() => {
+      const a = tensorA.slice([0], [size]);
+      const b = tensorB.slice([size], [size]);
+
+      return a.concat(b);
+    });
+  }
+
+  setBias(model, bias) {
+    const newModel = Object.assign({}, model);
+    newModel.layers[0].bias = newModel.layers[0].bias.write(bias);
+
+    return newModel;
+  }
+
+  // selects the best units from the current population
+  getWinners() {
+    // sort the units of the current population	in descending order by their fitness
+    let sortedPopulation = this.population.sort((unitA, unitB) => {
+      return unitB.score - unitA.score;
+    });
+
+    // return an array of the top units from the current population
+    return sortedPopulation.slice(0, 4);
   }
 
   getMaxIndex(array: number[]) {
