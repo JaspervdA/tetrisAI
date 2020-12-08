@@ -28,10 +28,11 @@ export class BoardComponent implements OnInit {
       this.boardService.rightKeyPress();
     }
   }
+  replayGameNumber: number;
 
   constructor(
-    private boardService: BoardService,
-    private aiService: AiService
+    public boardService: BoardService,
+    public aiService: AiService
   ) {}
 
   ngOnInit() {}
@@ -45,10 +46,24 @@ export class BoardComponent implements OnInit {
     this.aiService.training = true;
     this.aiService.createModel();
     this.aiService.trainModel();
-    // this.aiService.visualiseModel();
   }
+
   playTrainedAiClick() {
     this.aiService.training = false;
     this.aiService.playTrainedModel();
+  }
+
+  replayGameClick() {
+    this.replayGameNumber
+      ? this.aiService.replayGame(this.replayGameNumber)
+      : alert('Please input a game number to replay!');
+  }
+
+  unlockReward(){
+    if(this.boardService.highscore > 99){
+      alert('Goed gedaan! De geheime code is iloveEllissa, vul deze snel in.')
+    } else {
+      alert('Behaal een score van minimaal 100 punten om je beloning te bekijken.')
+    }
   }
 }

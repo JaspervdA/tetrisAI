@@ -1,13 +1,19 @@
-<div class="board" (keydown)="boardService.onKeydown($event)">
+<div class="board">
+<!-- <div class="board" (keydown)="boardService.onKeydown($event)"></div> -->
   <app-row style="display:flex" *ngFor="let row of boardService.state" [row]="row">
   </app-row>
 </div>
 <h2 *ngIf="aiService.training">{{'Training games ' + aiService.trainingGamesPlayed + '/' + aiService.trainingGames}}</h2>
 <h2 *ngIf="boardService.gameIsOver">Game Over!</h2>
 <div>
-  <button (click)="newGameClick()">New Game</button>
-  <button (click)="trainAiClick()">Train AI Model</button>
+  <button (click)="newGameClick()">Nieuw spel</button>
+    <!-- <button (click)="trainAiClick()">Train AI Model</button>
   <button (click)="playTrainedAiClick()">Play with Trained AI Model</button>
+  <p> Replay training game number
+    <input type="number" name="replay_number" [(ngModel)]="replayGameNumber">
+    <button (click)="replayGameClick()">{{'replay game ' + replayGameNumber}}</button>
+  </p> -->
   <p>{{'Score: '+this.boardService.score}}</p>
   <p>{{'Highscore: '+this.boardService.highscore}}</p>
+  <button (click)="unlockReward()">Bekijk je beloning</button>
 </div>

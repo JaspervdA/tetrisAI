@@ -5,26 +5,26 @@ import { Subscription, interval } from 'rxjs';
   providedIn: 'root'
 })
 export class BoardService {
-  // boardWidth: number = 10;
-  // boardHeight: number = 20;
-  boardWidth: number = 3;
-  boardHeight: number = 5;
-  tetrisBlocks: boolean[][][] = [[[true]]];
-  // tetrisBlocks: boolean[][][] = [
-  //   [[true, true, true, true]],
-  //   [[true, true], [true, true]],
-  //   [[true, false, false], [true, true, true]],
-  //   [[false, true, false], [true, true, true]],
-  //   [[false, false, true], [true, true, true]],
-  //   [[true, true, false], [false, true, true]],
-  //   [[false, true, true], [true, true, false]]
-  // ];
+  boardWidth: number = 10;
+  boardHeight: number = 20;
+  // boardWidth: number = 3;
+  // boardHeight: number = 5;
+  // tetrisBlocks: boolean[][][] = [[[true]]];
+  tetrisBlocks: boolean[][][] = [
+    [[true, true, true, true]],
+    [[true, true], [true, true]],
+    [[true, false, false], [true, true, true]],
+    [[false, true, false], [true, true, true]],
+    [[false, false, true], [true, true, true]],
+    [[true, true, false], [false, true, true]],
+    [[false, true, true], [true, true, false]]
+  ];
   state: boolean[][];
   currentX: number;
   currentY: number;
   currentTetrisBlock: boolean[][];
   timerSubscribtion: Subscription;
-  speed: number = 0;
+  speed: number = 1;
   score: number = 0;
   highscore: number = 0;
   aiReward: number;
@@ -39,7 +39,7 @@ export class BoardService {
   }
 
   gameOver() {
-    this.aiReward = -10;
+    this.aiReward = -100;
     this.gameIsOver = true;
     this.highscore = Math.max(this.score, this.highscore);
     this.score = 0;
@@ -100,13 +100,13 @@ export class BoardService {
 
   leftKeyPress() {
     if (this.leftBoundaryHit()) {
-      this.aiReward -= 0.5;
+      this.aiReward -= 10;
       return;
     } else if (this.leftBlockHit()) {
-      this.aiReward -= 0.5;
+      this.aiReward -= 10;
       return;
     } else {
-      this.aiReward -= 0.1;
+      this.aiReward -= 0.5;
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX - 1;
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
@@ -115,15 +115,15 @@ export class BoardService {
 
   rightKeyPress() {
     if (this.rightBoundaryHit(this.currentX, this.currentTetrisBlock)) {
-      this.aiReward -= -0.5;
+      this.aiReward -= 10;
       return;
     } else if (
       this.rightBlockHit(this.currentTetrisBlock, this.state, this.currentX)
     ) {
-      this.aiReward -= 0.5;
+      this.aiReward -= 10;
       return;
     } else {
-      this.aiReward -= 0.1;
+      this.aiReward -= -0.5;
       this.removeTetrisBlock(this.currentTetrisBlock, this.state);
       this.currentX = this.currentX + 1;
       this.addTetrisBlock(this.currentTetrisBlock, this.state);
@@ -132,7 +132,7 @@ export class BoardService {
 
   downKeyPress() {
     if (this.bottomBoundaryHit()) {
-      this.aiReward +=0.2
+      this.aiReward += 0.5;
       this.newTurn();
     } else if (this.downBlockHit()) {
       this.newTurn();
@@ -281,7 +281,7 @@ export class BoardService {
   }
 
   removeFullRow(rowIndex: number) {
-    this.aiReward += 2;
+    this.aiReward += 100;
     this.score += 1;
     this.state.splice(rowIndex, 1);
     let newRow = new Array(this.boardWidth).fill(false);
